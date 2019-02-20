@@ -60,7 +60,7 @@ data_vertex ver[3];
 const data_geometry *g[3];
 for (int i =0 ; i<3 ; ++i)
 {
-  for (int j = 0 ; j< state.num_vertices*state.floats_per_vertex; j += 3 *state.floats_per_vertex)
+  for (int j = 0 ; j< state.num_vertices*state.floats_per_vertex; j += 3*state.floats_per_vertex)
   {
     ver[i].data= &state.vertex_data[(state.floats_per_vertex * i) + j];
   }
