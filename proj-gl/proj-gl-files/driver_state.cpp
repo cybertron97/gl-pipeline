@@ -53,16 +53,7 @@ switch (type) {
 // // f(&const_some_array);
 //    //data_geometry** arr = new data_geometry*[3];
 //
-//     for (int j = 0; j < 3; ++j )
-//     {
-//       arr[j]->data = new float [std::max(floats_per_vertex)];
-//       for (int i = 0 ; i< state.floats_per_vertex; i ++)
-//       {
-//         arr[i]->data[i] = state.vertex_data[v+j+i];
-//       }
-//     }
-//     rasterize_triangle(state,arr);
-//   }}
+
 
 data_geometry arr[3];
 data_vertex ver[3];
