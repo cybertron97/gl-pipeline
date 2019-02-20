@@ -96,16 +96,15 @@ for line in gs.readlines():
         points=0
     else:
         if d>max_error:
-            print("FAIL: (%s) Too much error. Actual: %g  Max: %g."%(file,d,max_error))
+            print("FAIL: (%s) Too much error. Actual: %s  Max: %s."%(file,d,max_error))
             points=0
         else:
-            print("PASS: (%s) diff %g vs %g."%(file,d,max_error))
+            print("PASS: (%s) diff %s vs %s."%(file,d,max_error))
 
     if points>0:
-        print("+%g points"%points)
+        print("+%s points"%points)
         total_score+=points
     else:
         print("no points")
 
-print("FINAL SCORE: %g"%total_score)
-
+print("FINAL SCORE: %s"%total_score)
