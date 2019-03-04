@@ -25,7 +25,7 @@ void initialize_render(driver_state& state, int width, int height)
    for (int i = 0; i < width * height; ++i)
    {
       state.image_color[i] = make_pixel(0, 0, 0);
-      state.image_depth[i]=10.0;
+      state.image_depth[i]=1.0;
    }
 
     //std::cout<<"TODO: allocate and initialize state.image_color and state.image_depth."<<std::endl;
@@ -44,7 +44,8 @@ void render(driver_state& state, render_type type)
 
 switch (type) {
 
-  case render_type:: triangle:{
+  case render_type:: triangle:
+  {
 
 //  for(int v = 0; v < state.num_vertices; v +=3)
 //   {
@@ -56,35 +57,89 @@ switch (type) {
 //
 
 
-data_geometry arr[3];
-data_vertex ver[3];
-const data_geometry *g[3];
-for (int j =0 ; j<state.num_vertices*state.floats_per_vertex; j += 3*state.floats_per_vertex)
-{
-  for (int i = 0 ; i< 3; i++)
-  {
-    ver[i].data= &state.vertex_data[(state.floats_per_vertex * i) + j];
-    arr[i].data=ver[i].data;
-    state.vertex_shader(ver[i], arr[i], state.uniform_data);
-    g[i] = &arr[i];
-  }
-rasterize_triangle(state, g);
-}
+    data_geometry arr[3];
+    data_vertex ver[3];
+    const data_geometry *g[3];
+      for (int j =0 ; j<state.num_vertices*state.floats_per_vertex; j += 3*state.floats_per_vertex)
+        {
+          for (int i = 0 ; i< 3; i++)
+          {
+            ver[i].data= &state.vertex_data[(state.floats_per_vertex * i) + j];
+            arr[i].data=ver[i].data;
+            state.vertex_shader(ver[i], arr[i], state.uniform_data);
+            g[i] = &arr[i];
+          }
+          rasterize_triangle(state, g);
+        }
 
-}
+   }
+   break;
+   case render_type::indexed:
+   {
+     data_geometry arr[3];
+     data_vertex ver[3];
+     const data_geometry *g[3];
+     for (int j =0 ; j<3*state.num_triangles; j += 3)
+        {
+          for (int i = 0 ; i< 3; i++)
+            {
+              ver[i].data= &state.vertex_data[state.index_data[i+j]*state.floats_per_vertex];
+              arr[i].data=ver[i].data;
+              state.vertex_shader(ver[i], arr[i], state.uniform_data);
+              g[i] = &arr[i];
+            }
+            rasterize_triangle(state, g);
+          }
 
-break;
+    }
+    break;
+   case render_type::strip:
+   {
+     data_geometry arr[3];
+     data_vertex ver[3];
+     const data_geometry *g[3];
+      for (int j =0 ; j<(state.num_vertices-2); j++)
+        {
+          for (int i = 0 ; i< 3; i++)
+           {
+             ver[i].data= &state.vertex_data[(state.floats_per_vertex) * (i + j)];
+             arr[i].data=ver[i].data;
+             state.vertex_shader(ver[i], arr[i], state.uniform_data);
+             g[i] = &arr[i];
+           }
+           rasterize_triangle(state, g);
+        }
+   }
+  break;
+    case render_type::fan:
+    {
+      data_geometry arr[3];
+      data_vertex ver[3];
+      const data_geometry *g[3];
+      for (int j =0 ; j<state.num_vertices; j ++)
+        {
+          for (int i = 0 ; i< 3; i++)
+            {
+              // ver[i].data= &state.vertex_data [(state.floats_per_vertex * i) + j];
+              int a = ((i+j)*state.floats_per_vertex);
+              if (i==0)
+                {
+                  a = 0;
+                }
+              ver[i].data= state.vertex_data + a;
+              arr[i].data=ver[i].data;
+              state.vertex_shader(ver[i], arr[i], state.uniform_data);
+              g[i] = &arr[i];
 
-
-
-
-  case render_type::indexed: break;
-  case render_type::strip: break ;
-  case render_type::fan: break;
+            }
+            rasterize_triangle(state, g);
+        }
+      }break;
 
 	//	break;
     default: std::cout<<"This is hard! Send help bros!"<<std::endl;
-}}
+  }
+}
 
 
 // This function clips a triangle (defined by the three vertices in the "in" array).
@@ -98,7 +153,7 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
         rasterize_triangle(state, in);
         return;
     }
-    std::cout<<"TODO: implement clipping. (The current code passes the triangle through without clipping them.)"<<std::endl;
+  //  std::cout<<"TODO: implement clipping. (The current code passes the triangle through without clipping them.)"<<std::endl;
     clip_triangle(state,in,face+1);
 }
 
@@ -107,9 +162,9 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
 // fragments, calling the fragment shader, and z-buffering.
 void rasterize_triangle(driver_state& state, const data_geometry* in[3])
 {
-  vec4 a = in[0]->gl_Position/in[0]->gl_Position[3];
-  vec4 b = in[1]->gl_Position/in[1]->gl_Position[3];
-  vec4 c = in[2]->gl_Position/in[2]->gl_Position[3];
+  auto a = in[0]->gl_Position/in[0]->gl_Position[3];
+  auto b = in[1]->gl_Position/in[1]->gl_Position[3];
+  auto c = in[2]->gl_Position/in[2]->gl_Position[3];
   //  std::cout<<"TODO: implement rasterization"<<std::endl;
   float ax = ((state.image_width/2) * a[0]);
   float ay = ((state.image_height/2) * a[1]);
@@ -135,11 +190,25 @@ void rasterize_triangle(driver_state& state, const data_geometry* in[3])
 
   float area_Triangle = 0.5 * (((bi * cj) - (ci * bj)) - ((ai * cj) - (ci * aj)) + ((ai * bj) - (bi * aj)));
 
+      int minx = min(min(ai, bi),ci);
+      int maxx =  max(max(ai,bi),ci);
+      int miny = min(min(aj,bj),cj);
+      int maxy = max(max(aj,bj),cj);
 
-   for (int i = min(min(ai,bi),ci); i <= max(max(ai,bi),ci); i++)
+  if(minx < 0)
+       minx = 0;
+  if(miny < 0)
+       miny = 0;
+  if(maxx > state.image_width)
+       maxx = state.image_width - 1;
+  if(maxy > state.image_height)
+       maxy = state.image_height - 1;
+
+
+   for (int i = minx; i <= maxx; i++)
    {
 
-     for (int j=min(min(aj,bj),cj); j<=max(max(aj,bj),cj) ; j++)
+     for (int j=miny; j<=maxy ; j++)
       {
        float alpha = 0.5 * (((bi * cj)-(ci * bj))-((i * cj) - (ci * j))+((i * bj)-(bi * j)));
        float beta = 0.5 * (((i * cj)-(ci * j))-((ai * cj) - (ci * aj))+((ai * j)-(i * aj)));
@@ -150,59 +219,62 @@ void rasterize_triangle(driver_state& state, const data_geometry* in[3])
        beta = beta/area_Triangle;
        gamma= gamma/area_Triangle;
 
-       if (alpha >= 0 && beta>= 0 && gamma >= 0)
+       if (alpha >= -0.001 && beta>= -0.001 && gamma >= -0.001)
             {
-              data_fragment frag;
-                       float frag_data[state.floats_per_vertex];
-                       frag.data = frag_data;
+                data_fragment frag;
+                float frag_data[state.floats_per_vertex];
+                       //float no_perspective [MAX_FLOATS_PER_VERTEX];
+                frag.data = frag_data;
 
-                        for(int j = 0; j < state.floats_per_vertex; j++)
-                       {
-
+                  for(int j = 0; j < state.floats_per_vertex; j++)
+                      {
                          switch(state.interp_rules[j])
                          {
                            case interp_type::flat:
-                                {frag.data[j]= in[0]->data[j];}
-
-                             break;
+                                {
+                                  frag.data[j]= in[0]->data[j];
+                                }
+                           break;
                            case interp_type::smooth:
-                            { float  k = (alpha/in[0]->gl_Position[3])+(beta/in[1]->gl_Position[3])+(gamma/in[2]->gl_Position[3]);
-                               float alpha1 = alpha/ (k * in[0]->gl_Position[3]);
-                               float beta1 = beta/(k * in[1]->gl_Position[3]);
-                               float gamma1  = gamma/(k * in[2]->gl_Position[3]);
-                               frag.data[j]= alpha1 * in[0]->data[j] + beta1*in[1]->data[j]+ gamma1*in[2]->data[j];
-                            }
-                             break;
+                                {
+                                  float  k = (alpha/in[0]->gl_Position[3])+(beta/in[1]->gl_Position[3])
+                                          +(gamma/in[2]->gl_Position[3]);
+                              //alpha, beta , gamma prime values
+                                  float alpha1 = alpha/ (k * in[0]->gl_Position[3]);
+                                  float beta1 = beta/(k * in[1]->gl_Position[3]);
+                                  float gamma1  = gamma/(k * in[2]->gl_Position[3]);
+                                  frag.data[j]= alpha1 * in[0]->data[j] + beta1*in[1]->data[j]+ gamma1*in[2]->data[j];
+                                }
+                           break;
                            case interp_type::noperspective:
-                                      {frag.data[j] = alpha*in[0]->data[j] + beta*in[1]->data[j]+gamma*in[2]->data[j];}
-                             break;
+                                  {
+                                  // no_perspective[j]=(alpha * in[0]->data[j]) + (beta * in[1]->data[j])+(gamma * in[2]->data[j]);
+                                  // frag.data =no_perspective;
+                                    frag.data[j] =(alpha * in[0]->data[j]) + (beta * in[1]->data[j])+(gamma * in[2]->data[j]);
+
+                                  }
+                                  break;
                            case interp_type::invalid:
-                             break;
+                           break;
                          }
                        }
 
-
-
                         //call fragment shader
-                       data_output dOut;
-                       state.fragment_shader(frag, dOut,state.uniform_data);
-                       //std::cout<< color.output_color <<std::endl;
-                       int red = 255 * dOut.output_color[0];
-                       int green = 255 * dOut.output_color[1];
-                       int blue = 255 * dOut.output_color[2];
+                       data_output dout;
+                       state.fragment_shader(frag, dout,state.uniform_data);
 
-                        //std::cout<< red <<std::endl;
+                       int red = 255 * dout.output_color[0];
+                       int green = 255 * dout.output_color[1];
+                       int blue = 255 * dout.output_color[2];
 
-                        float z = alpha*a[2]+beta*b[2]+gamma*c[2];
-        int index = (state.image_width * j) + i;
+                         float z = alpha*a[2]+beta*b[2]+gamma*c[2];
+                         int index = (state.image_width * j) + i;
 
-
-        if(state.image_depth[index] > z)
-        {
-
-          state.image_depth[index] = z;
-          state.image_color[index] = make_pixel(red,green,blue);
-        }
+                      if (z<state.image_depth[index] )
+                            {
+                              state.image_depth[index] = z;
+                              state.image_color[index] = make_pixel(red,green,blue);
+                            }
 
 
               // int index = state.image_width  * j + i;
