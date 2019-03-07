@@ -70,6 +70,7 @@ switch (type) {
             g[i] = &arr[i];
           }
           rasterize_triangle(state, g);
+          //clip_triangle(state,g,0);
         }
 
    }
@@ -89,6 +90,7 @@ switch (type) {
               g[i] = &arr[i];
             }
             rasterize_triangle(state, g);
+          //  clip_triangle(state,g,0);
           }
 
     }
@@ -108,6 +110,7 @@ switch (type) {
              g[i] = &arr[i];
            }
            rasterize_triangle(state, g);
+           // clip_triangle(state,g,0);
         }
    }
   break;
@@ -133,6 +136,7 @@ switch (type) {
 
             }
             rasterize_triangle(state, g);
+            // clip_triangle(state,g,0);
         }
       }break;
 
@@ -153,6 +157,27 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
         rasterize_triangle(state, in);
         return;
     }
+    else if (face ==1)
+    {
+
+    }
+    else if (face == 2)
+    {
+
+    }
+    else if (face == 3 )
+    {
+
+    }
+    else if (face == 4 )
+    {
+
+    }
+    else if (face == 5 )
+    {
+
+    }
+
   //  std::cout<<"TODO: implement clipping. (The current code passes the triangle through without clipping them.)"<<std::endl;
     clip_triangle(state,in,face+1);
 }
@@ -270,7 +295,7 @@ void rasterize_triangle(driver_state& state, const data_geometry* in[3])
                          float z = alpha*a[2]+beta*b[2]+gamma*c[2];
                          int index = (state.image_width * j) + i;
 
-                      if (z<state.image_depth[index] )
+                      if ( z<state.image_depth[index]&&z>-1&&z<1)
                             {
                               state.image_depth[index] = z;
                               state.image_color[index] = make_pixel(red,green,blue);
